@@ -1,0 +1,6 @@
+/.idea
+/venv/
+/.pytest_cache/
+/startup-local-server.txt
+/db.sqlite3
+/test_conn.py

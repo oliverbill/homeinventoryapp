@@ -2,63 +2,22 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
-from utils import str_to_dict
+import environ
+
+env = environ.Env(DEBUG=(bool, False))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+dev_settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.path.join(BASE_DIR, '.env')
+environ.Env.read_env(dev_settings)
 
-APP_SETTINGS_DEV_FILENAME = 'APPLICATION_SETTINGS_DEV'
-APP_SETTINGS_PROD_FILENAME = 'APPLICATION_SETTINGS'
-app_settings_secret_value = None
+SECRET_KEY = env("SECRET_KEY")
+DEBUG = env("DEBUG", default=False)
+DATABASES = {"default": env.db()}
 
-IS_PROD_ENV = os.getenv(APP_SETTINGS_PROD_FILENAME)
-IS_DEV_ENV = os.getenv(APP_SETTINGS_DEV_FILENAME)
-IS_LOCAL_ENV = os.getenv(APP_SETTINGS_PROD_FILENAME) is None and os.getenv(APP_SETTINGS_DEV_FILENAME) is None
-
-if IS_DEV_ENV:
-    APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_DEV_FILENAME)
-    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT) or None
-    SECRET_KEY = app_settings_secret_value['SECRET_KEY']
-    DATABASE_URL = app_settings_secret_value['DATABASE_URL']
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": app_settings_secret_value['DB_NAME'],
-            "USER": app_settings_secret_value['DB_USER'],
-            "PASSWORD": app_settings_secret_value['DB_USER_PASS'],
-            "HOST": app_settings_secret_value['DB_INSTANCE_NAME'],
-            "PORT": "5432",
-        }
-    }
-    GS_BUCKET_NAME = app_settings_secret_value["GS_BUCKET_NAME"]
-
-if IS_PROD_ENV:
-    APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_PROD_FILENAME)
-    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT) or None
-    DEBUG = False
-    SECRET_KEY = app_settings_secret_value['SECRET_KEY']
-    DATABASE_URL = app_settings_secret_value['DATABASE_URL']
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": app_settings_secret_value['DB_NAME'],
-            "USER": app_settings_secret_value['DB_USER'],
-            "PASSWORD": app_settings_secret_value['DB_USER_PASS'],
-            "HOST": app_settings_secret_value['DB_INSTANCE_NAME'],
-            "PORT": "5432",
-        }
-    }
-    GS_BUCKET_NAME = app_settings_secret_value["GS_BUCKET_NAME"]
-
-if IS_LOCAL_ENV:
-    SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
-    DEBUG = True
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
+    DATABASES["default"]["HOST"] = "127.0.0.1"
+    DATABASES["default"]["PORT"] = 3306
 
 # If defined, add service URL to Django security settings
 CLOUDRUN_SERVICE_URL = os.getenv("CLOUDRUN_SERVICE_URL", default=None)

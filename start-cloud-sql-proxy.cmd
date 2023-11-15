@@ -1,0 +1,1 @@
+cloud-sql-proxy --port 3306 homeinventory-405011:europe-west1:dbservice-homeinventoryapp
