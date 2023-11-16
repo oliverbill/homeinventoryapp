@@ -29,6 +29,7 @@ elif IS_LOCAL_ENV:
     env = environ.Env()
     environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
     DEBUG = env.get_value('DEBUG',default=None)
+    STATIC_ROOT = "./static-djangoadmin"
     if DEBUG is None:
         SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
         DEBUG = True
@@ -69,10 +70,11 @@ if not IS_LOCAL_ENV:
         }
     }
     GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
-    STATICFILES_DIRS = []
+    STATICFILES_DIRS = ["static-djangoadmin/"]
     DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
     STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
     GS_DEFAULT_ACL = "publicRead"
+    STATIC_ROOT = "static-djangoadmin/"
     # print(DATABASES['default'])
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
@@ -166,6 +168,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
