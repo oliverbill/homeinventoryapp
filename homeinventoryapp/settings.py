@@ -4,25 +4,48 @@ from urllib.parse import urlparse
 
 import environ
 
+from utils import str_to_dict
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# https://django-environ.readthedocs.io/en/latest/tips.html
-env = environ.Env(DEBUG=(bool, False))
-settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.environ.get("APPLICATION_SETTINGS")
+APP_SETTINGS_DEV_FILENAME = 'APPLICATION_SETTINGS_DEV'
+APP_SETTINGS_PROD_FILENAME = 'APPLICATION_SETTINGS'
+app_settings_secret_value = None
 
-if settings is None:
-    settings = os.path.join(BASE_DIR, '.env')
+IS_PROD_ENV = os.getenv(APP_SETTINGS_PROD_FILENAME)
+IS_DEV_ENV = os.getenv(APP_SETTINGS_DEV_FILENAME)
+IS_LOCAL_ENV = os.getenv(APP_SETTINGS_PROD_FILENAME) is None and os.getenv(APP_SETTINGS_DEV_FILENAME) is None
 
-env.read_env(settings)
+APPLICATION_SETTINGS_CONTENT = None
 
-DEBUG = env("DEBUG", default=False)
+if IS_DEV_ENV:
+    APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_DEV_FILENAME)
+elif IS_PROD_ENV:
+    APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_PROD_FILENAME)
 
-checking = settings is not None and len(settings) > 0
-print(f'APPLICATION_SETTINGS is loaded: {checking}')
+if not IS_LOCAL_ENV:
+    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT) or None
+    SECRET_KEY = app_settings_secret_value['SECRET_KEY']
+    DATABASE_URL = app_settings_secret_value['DATABASE_URL']
+    DEBUG = app_settings_secret_value['DEBUG']
+    # https://django-environ.readthedocs.io/en/latest/tips.html
+    env = environ.Env()
+    settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.environ.get("APPLICATION_SETTINGS")
+    env.read_env(settings)
 
-SECRET_KEY = env('SECRET_KEY')
-DATABASES = {"default": env.db()}
+    checking = settings is not None and len(settings) > 0
+    print(f'APPLICATION_SETTINGS is loaded: {checking}')
+    DATABASES = {"default": env.db()}
+else:
+    SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
+    DEBUG = True
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
@@ -103,11 +126,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-STATICFILES_DIRS = []
-DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-GS_DEFAULT_ACL = "publicRead"
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -118,12 +136,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
