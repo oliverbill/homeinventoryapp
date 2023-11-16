@@ -9,8 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # https://django-environ.readthedocs.io/en/latest/tips.html
 env = environ.Env(DEBUG=(bool, False))
-settings = os.environ.get("APPLICATION_SETTINGS_DEV") \
-           or os.environ.get("APPLICATION_SETTINGS") \
+settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.environ.get("APPLICATION_SETTINGS")
 
 if settings is None:
     settings = os.path.join(BASE_DIR, '.env')
@@ -22,7 +21,7 @@ DEBUG = env("DEBUG", default=False)
 checking = settings is not None and len(settings) > 0
 print(f'APPLICATION_SETTINGS is loaded: {checking}')
 
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = env('SECRET_KEY')
 DATABASES = {"default": env.db()}
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
