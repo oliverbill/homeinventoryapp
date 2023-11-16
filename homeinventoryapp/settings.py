@@ -11,14 +11,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(DEBUG=(bool, False))
 settings = os.environ.get("APPLICATION_SETTINGS_DEV") \
            or os.environ.get("APPLICATION_SETTINGS") \
-           or os.path.join(BASE_DIR, '.env')
+
+if settings is None:
+    os.path.join(BASE_DIR, '.env')
 
 environ.Env.read_env(settings)
 
 DEBUG = env("DEBUG", default=False)
 
 checking = settings is not None and len(settings) > 0
-print(f'APPLICATION_SETTINGS_DEV is loaded: {checking}')
+print(f'APPLICATION_SETTINGS is loaded: {checking}')
+print(f'APPLICATION_SETTINGS: {settings}')
 
 SECRET_KEY = env("SECRET_KEY")
 DATABASES = {"default": env.db()}
