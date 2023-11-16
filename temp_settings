@@ -1,0 +1,4 @@
+DEBUG=True
+GS_BUCKET_NAME=homeinventory-405011-media
+SECRET_KEY='django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
+DATABASE_URL=postgres://djuser:Baleia302@//cloudsql/homeinventory-405011:europe-west1:dbservice-homeinventoryapp/db-inventoryapi-dev
