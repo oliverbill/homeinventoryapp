@@ -41,7 +41,17 @@ elif IS_LOCAL_ENV:
     else:
         DEBUG = env('DEBUG')
         SECRET_KEY = env('SECRET_KEY')
-        DATABASES = {'default': env.db()}
+        # DATABASES = {'default': env.db()}
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': env('NAME'),
+                'USER': env('USER'),
+                'PASSWORD': env('PASSWORD'),
+                'HOST': env('HOST'),
+            }
+        }
+        print(DATABASES['default'])
 
 if not IS_LOCAL_ENV:
     app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
@@ -51,6 +61,16 @@ if not IS_LOCAL_ENV:
     DATABASE_URL = app_settings_secret_value['DATABASE_URL']
     DEBUG = app_settings_secret_value['DEBUG']
     DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': app_settings_secret_value['NAME'],
+            'USER': app_settings_secret_value['USER'],
+            'PASSWORD': app_settings_secret_value['PASSWORD'],
+            'HOST': app_settings_secret_value['HOST'],
+        }
+    }
+    print(DATABASES['default'])
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
