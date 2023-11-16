@@ -1,31 +1,26 @@
-import logging
 import os
 from pathlib import Path
 from urllib.parse import urlparse
 
 import environ
-# https://django-environ.readthedocs.io/en/latest/tips.html
-env = environ.Env(DEBUG=(bool, False))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# https://django-environ.readthedocs.io/en/latest/tips.html
+env = environ.Env(DEBUG=(bool, False))
+settings = os.environ.get("APPLICATION_SETTINGS_DEV") \
+           or os.environ.get("APPLICATION_SETTINGS") \
+           or os.path.join(BASE_DIR, '.env')
+
+environ.Env.read_env(settings)
 
 DEBUG = env("DEBUG", default=False) or None
 if DEBUG is None:
     raise ValueError('secrets not loaded into env var APPLICATION_SETTINGS_DEV')
 
-if DEBUG:
-    content = os.environ.get("APPLICATION_SETTINGS_DEV")
-    checking = content is not None and len(content) > 0
-    print(f'APPLICATION_SETTINGS_DEV is loaded: {checking}')
-    settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.path.join(BASE_DIR, '.env')
-else:
-    content = os.environ.get("APPLICATION_SETTINGS")
-    checking = content is not None and len(content) > 0
-    print(f'APPLICATION_SETTINGS is loaded: {checking}')
-    settings = os.environ.get("APPLICATION_SETTINGS")
-
-environ.Env.read_env(settings)
+checking = settings is not None and len(settings) > 0
+print(f'APPLICATION_SETTINGS_DEV is loaded: {checking}')
 
 SECRET_KEY = env("SECRET_KEY")
 DATABASES = {"default": env.db()}
