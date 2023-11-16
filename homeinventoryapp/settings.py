@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+import dj_database_url
 import environ
 
 from utils import str_to_dict
@@ -18,6 +19,7 @@ IS_DEV_ENV = os.getenv(APP_SETTINGS_DEV_FILENAME)
 IS_LOCAL_ENV = os.getenv(APP_SETTINGS_PROD_FILENAME) is None and os.getenv(APP_SETTINGS_DEV_FILENAME) is None
 
 APPLICATION_SETTINGS_CONTENT = None
+DATABASES = {}
 
 if IS_DEV_ENV:
     APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_DEV_FILENAME)
@@ -25,18 +27,13 @@ elif IS_PROD_ENV:
     APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_PROD_FILENAME)
 
 if not IS_LOCAL_ENV:
-    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT) or None
+    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
+    checking = app_settings_secret_value is not None and len(app_settings_secret_value) > 0
+    print(f'APPLICATION_SETTINGS is loaded: {checking}')
     SECRET_KEY = app_settings_secret_value['SECRET_KEY']
     DATABASE_URL = app_settings_secret_value['DATABASE_URL']
     DEBUG = app_settings_secret_value['DEBUG']
-    # https://django-environ.readthedocs.io/en/latest/tips.html
-    env = environ.Env()
-    settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.environ.get("APPLICATION_SETTINGS")
-    env.read_env(settings)
-
-    checking = settings is not None and len(settings) > 0
-    print(f'APPLICATION_SETTINGS is loaded: {checking}')
-    DATABASES = {"default": env.db()}
+    DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
 else:
     SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
     DEBUG = True
