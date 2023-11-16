@@ -15,9 +15,7 @@ settings = os.environ.get("APPLICATION_SETTINGS_DEV") \
 
 environ.Env.read_env(settings)
 
-DEBUG = env("DEBUG", default=False) or None
-if DEBUG is None:
-    raise ValueError('secrets not loaded into env var APPLICATION_SETTINGS_DEV')
+DEBUG = env("DEBUG", default=False)
 
 checking = settings is not None and len(settings) > 0
 print(f'APPLICATION_SETTINGS_DEV is loaded: {checking}')
