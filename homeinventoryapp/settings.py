@@ -25,6 +25,23 @@ if IS_DEV_ENV:
     APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_DEV_FILENAME)
 elif IS_PROD_ENV:
     APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_PROD_FILENAME)
+elif IS_LOCAL_ENV:
+    env = environ.Env()
+    environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+    DEBUG = env.get_value('DEBUG',default=None)
+    if DEBUG is None:
+        SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
+        DEBUG = True
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+    else:
+        DEBUG = env('DEBUG')
+        SECRET_KEY = env('SECRET_KEY')
+        DATABASES = {'default': env.db()}
 
 if not IS_LOCAL_ENV:
     app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
@@ -34,15 +51,6 @@ if not IS_LOCAL_ENV:
     DATABASE_URL = app_settings_secret_value['DATABASE_URL']
     DEBUG = app_settings_secret_value['DEBUG']
     DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
-else:
-    SECRET_KEY = 'django-insecure-g%307@2mqxm41xo1utug+q5-pmo*-hez6d-t7k76xhg$upm-4f'
-    DEBUG = True
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
