@@ -10,7 +10,6 @@ env = environ.Env(DEBUG=(bool, False))
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 dev_settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.path.join(BASE_DIR, '.env')
-logging.INFO(f'dev_settings is loaded: {dev_settings is not None}')
 environ.Env.read_env(dev_settings)
 
 SECRET_KEY = env("SECRET_KEY")
