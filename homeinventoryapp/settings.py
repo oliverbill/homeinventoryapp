@@ -58,9 +58,7 @@ if not IS_LOCAL_ENV:
     checking = app_settings_secret_value is not None and len(app_settings_secret_value) > 0
     print(f'APPLICATION_SETTINGS is loaded: {checking}')
     SECRET_KEY = app_settings_secret_value['SECRET_KEY']
-    DATABASE_URL = app_settings_secret_value['DATABASE_URL']
     DEBUG = app_settings_secret_value['DEBUG']
-    DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
