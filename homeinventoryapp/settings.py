@@ -13,15 +13,14 @@ settings = os.environ.get("APPLICATION_SETTINGS_DEV") \
            or os.environ.get("APPLICATION_SETTINGS") \
 
 if settings is None:
-    os.path.join(BASE_DIR, '.env')
+    settings = os.path.join(BASE_DIR, '.env')
 
-environ.Env.read_env(settings)
+env.read_env(settings)
 
 DEBUG = env("DEBUG", default=False)
 
 checking = settings is not None and len(settings) > 0
 print(f'APPLICATION_SETTINGS is loaded: {checking}')
-print(f'APPLICATION_SETTINGS: {settings}')
 
 SECRET_KEY = env("SECRET_KEY")
 DATABASES = {"default": env.db()}
