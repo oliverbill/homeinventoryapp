@@ -9,11 +9,25 @@ env = environ.Env(DEBUG=(bool, False))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-dev_settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.path.join(BASE_DIR, '.env')
-environ.Env.read_env(dev_settings)
+
+DEBUG = env("DEBUG", default=False) or None
+if DEBUG is None:
+    raise ValueError('secrets not loaded into env var APPLICATION_SETTINGS_DEV')
+
+if DEBUG:
+    content = os.environ.get("APPLICATION_SETTINGS_DEV")
+    checking = content is not None and len(content) > 0
+    print(f'APPLICATION_SETTINGS_DEV is loaded: {checking}')
+    settings = os.environ.get("APPLICATION_SETTINGS_DEV") or os.path.join(BASE_DIR, '.env')
+else:
+    content = os.environ.get("APPLICATION_SETTINGS")
+    checking = content is not None and len(content) > 0
+    print(f'APPLICATION_SETTINGS is loaded: {checking}')
+    settings = os.environ.get("APPLICATION_SETTINGS")
+
+environ.Env.read_env(settings)
 
 SECRET_KEY = env("SECRET_KEY")
-DEBUG = env("DEBUG", default=False)
 DATABASES = {"default": env.db()}
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
