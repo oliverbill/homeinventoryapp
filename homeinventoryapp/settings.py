@@ -68,6 +68,11 @@ if not IS_LOCAL_ENV:
             'HOST': app_settings_secret_value['HOST'],
         }
     }
+    GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
+    STATICFILES_DIRS = []
+    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    GS_DEFAULT_ACL = "publicRead"
     # print(DATABASES['default'])
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
@@ -160,9 +165,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = './static-djangoadmin'
-
-STATIC_ROOT = './static-djangoadmin'
+STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
