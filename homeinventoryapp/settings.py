@@ -51,7 +51,7 @@ elif IS_LOCAL_ENV:
                 'HOST': env('HOST'),
             }
         }
-        print(DATABASES['default'])
+        # print(DATABASES['default'])
 
 if not IS_LOCAL_ENV:
     app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
@@ -68,7 +68,7 @@ if not IS_LOCAL_ENV:
             'HOST': app_settings_secret_value['HOST'],
         }
     }
-    print(DATABASES['default'])
+    # print(DATABASES['default'])
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
@@ -160,7 +160,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = './static-djangoadmin'
 
 STATIC_ROOT = './static-djangoadmin'
 
