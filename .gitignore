@@ -6,3 +6,5 @@
 /test_conn.py
 /.env-prod
 /.env
+/homeinventoryapi/migrations/0001_initial.py
+/homeinventoryapi/migrations/__init__.py
