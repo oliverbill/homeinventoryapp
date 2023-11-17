@@ -47,23 +47,20 @@ elif IS_LOCAL_ENV:
 
 if not IS_LOCAL_ENV:
     app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
-    checking = app_settings_secret_value is not None and len(app_settings_secret_value) > 0
-    print(f'APPLICATION_SETTINGS is loaded: {checking}')
+    print(f'APPLICATION_SETTINGS: {app_settings_secret_value}')
     SECRET_KEY = app_settings_secret_value['SECRET_KEY']
     DEBUG = app_settings_secret_value['DEBUG']
     DATABASE_URL = app_settings_secret_value['DATABASE_URL']
-    DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
+    env = environ.Env()
+    env.ENVIRON.setdefault(key='DATABASE_URL',value=DATABASE_URL)
+    DATABASES = {'default': env.db()}
     GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
-    STATICFILES_DIRS = ["static-djangoadmin/"]
-    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    GS_DEFAULT_ACL = "publicRead"
-    STATIC_ROOT = "static-djangoadmin/"
-    print(DATABASES['default'])
+    import bucket_settings
+    print(f"DATABASES: {DATABASES['default']}")
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
-    DATABASES["default"]["PORT"] = 5432
+    DATABASES["default"]["PORT"] = 3306
 
 # If defined, add service URL to Django security settings
 CLOUDRUN_SERVICE_URL = os.getenv("CLOUDRUN_SERVICE_URL", default=None)
