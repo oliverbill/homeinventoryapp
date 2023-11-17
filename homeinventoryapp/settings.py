@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
-import dj_database_url
 import environ
 
 from utils import str_to_dict
@@ -43,7 +42,6 @@ elif IS_LOCAL_ENV:
         DEBUG = env('DEBUG')
         SECRET_KEY = env('SECRET_KEY')
         DATABASES = {'default': env.db()}
-        # print(DATABASES['default'])
 
 if not IS_LOCAL_ENV:
     app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
@@ -60,11 +58,10 @@ if not IS_LOCAL_ENV:
     STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
     GS_DEFAULT_ACL = "publicRead"
     STATIC_ROOT = "static-djangoadmin/"
-    print(f"DATABASES: {DATABASES['default']}")
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
-    DATABASES["default"]["PORT"] = 3306
+    DATABASES["default"]["PORT"] = 5432
 
 # If defined, add service URL to Django security settings
 CLOUDRUN_SERVICE_URL = os.getenv("CLOUDRUN_SERVICE_URL", default=None)
