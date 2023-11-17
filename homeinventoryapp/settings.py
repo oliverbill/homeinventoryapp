@@ -42,16 +42,7 @@ elif IS_LOCAL_ENV:
     else:
         DEBUG = env('DEBUG')
         SECRET_KEY = env('SECRET_KEY')
-        # DATABASES = {'default': env.db()}
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': env('NAME'),
-                'USER': env('USER'),
-                'PASSWORD': env('PASSWORD'),
-                'HOST': env('HOST'),
-            }
-        }
+        DATABASES = {'default': env.db()}
         # print(DATABASES['default'])
 
 if not IS_LOCAL_ENV:
@@ -60,15 +51,8 @@ if not IS_LOCAL_ENV:
     print(f'APPLICATION_SETTINGS is loaded: {checking}')
     SECRET_KEY = app_settings_secret_value['SECRET_KEY']
     DEBUG = app_settings_secret_value['DEBUG']
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': app_settings_secret_value['NAME'],
-            'USER': app_settings_secret_value['USER'],
-            'PASSWORD': app_settings_secret_value['PASSWORD'],
-            'HOST': app_settings_secret_value['HOST'],
-        }
-    }
+    DATABASE_URL = app_settings_secret_value['DATABASE_URL']
+    DATABASES['default'] = dj_database_url.config(default=DATABASE_URL)
     GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
     STATICFILES_DIRS = ["static-djangoadmin/"]
     DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
