@@ -9,5 +9,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("", include("homeinventoryapi.urls")),
     path("api-auth/", include("rest_framework.urls")),
-    path(r'^static/(?P<path>.*)$', serve,{'document_root': settings.STATIC_ROOT}),
 ]
