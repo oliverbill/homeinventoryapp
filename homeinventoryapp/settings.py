@@ -75,7 +75,7 @@ if not IS_LOCAL_ENV:
     STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
     GS_DEFAULT_ACL = "publicRead"
     STATIC_ROOT = "static-djangoadmin/"
-    # print(DATABASES['default'])
+    print(DATABASES['default'])
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
