@@ -79,7 +79,7 @@ if not IS_LOCAL_ENV:
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
-    DATABASES["default"]["PORT"] = 3306
+    DATABASES["default"]["PORT"] = 5432
 
 # If defined, add service URL to Django security settings
 CLOUDRUN_SERVICE_URL = os.getenv("CLOUDRUN_SERVICE_URL", default=None)
