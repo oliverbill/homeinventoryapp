@@ -55,7 +55,11 @@ if not IS_LOCAL_ENV:
     env.ENVIRON.setdefault(key='DATABASE_URL',value=DATABASE_URL)
     DATABASES = {'default': env.db()}
     GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
-    import bucket_settings
+    STATICFILES_DIRS = ["static-djangoadmin/"]
+    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    GS_DEFAULT_ACL = "publicRead"
+    STATIC_ROOT = "static-djangoadmin/"
     print(f"DATABASES: {DATABASES['default']}")
 
 if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
