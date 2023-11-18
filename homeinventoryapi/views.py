@@ -48,14 +48,25 @@ class ShoppingListItemViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         logger.debug('getting into perform_create()')
         if serializer.is_valid():
-            newshoppinglistitem = serializer.save(buyer=self.request.user,
-                                                  status=ShoppingListItemStatus.CREATED)
+            serializer.save(buyer=self.request.user,
+                            status=ShoppingListItemStatus.CREATED)
 
-            inv = InventoryItem(creator=self.request.user, name=newshoppinglistitem.item_name,
-                                brand=newshoppinglistitem.item_brand,
-                                grocery_store=newshoppinglistitem.item_grocery_store,
-                                quantity=newshoppinglistitem.item_quantity, shoppinglistitem=newshoppinglistitem)
-            InventoryItem.save(inv)
+    def perform_update(self, serializer):
+        logger.debug('getting into perform_update()')
+        updated_shoplistitem = serializer.save(buyer=self.request.user,
+                                               status=ShoppingListItemStatus.SHOPPED)
+        barcode = None
+        payed_price = None
+        if 'barcode' in self.request.data:
+            barcode = self.request.data['barcode']
+        if 'payed_price' in self.request.data:
+            payed_price = self.request.data['payed_price']
+
+        inv = InventoryItem(creator=self.request.user, name=updated_shoplistitem.item_name,
+                            brand=updated_shoplistitem.item_brand, barcode=barcode, payed_price=payed_price,
+                            grocery_store=updated_shoplistitem.item_grocery_store,
+                            quantity=updated_shoplistitem.item_quantity, shoppinglistitem=updated_shoplistitem)
+        InventoryItem.save(inv)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     logger = logging.getLogger(__name__)

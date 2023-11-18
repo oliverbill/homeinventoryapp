@@ -13,10 +13,12 @@ class GroceryStore(models.TextChoices):
 class InventoryStatus(models.TextChoices):
     CREATED = "CREATED"
     STORED = "STORED"
+    RUNOUT = "RUNOUT"
 
 class ShoppingListItemStatus(models.TextChoices):
     CREATED = "CREATED"
     SHOPPED = "SHOPPED"
+    NOT_SHOPPED = "NOT_SHOPPED"
 
 class ShoppingListItem(models.Model):
     created = DateTimeField(auto_now_add=True)

@@ -1,20 +1,19 @@
-import os
 from http import HTTPStatus
 
 import pytest
+from _decimal import Decimal
 from django.contrib.auth.models import User
 from django.template.defaulttags import now
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 
-from homeinventoryapi import adapters
-from homeinventoryapi.models import InventoryItem, ShoppingListItem
+from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingListItemStatus
 
 
 class ShoppingListItemE2ETest(APITestCase):
 
     def setUp(self):
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
+        # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
         self.client = APIClient()
         self.user = User.objects.create_superuser(
             username='admin',
@@ -77,6 +76,25 @@ class ShoppingListItemE2ETest(APITestCase):
         self.assertEqual(response.status_code, HTTPStatus.OK._value_)
         self.assertEqual(response.data['item_brand'], 'Continente')
 
+    @pytest.mark.django_db
+    def test_when_change_to_status_SHOPPED_creates_inventory_items(self):
+        posted_item = self.post_shoppinglistitem_and_getit_from_db()
+        response = self.client.patch(path=f'{self.base_url}{posted_item.id}/',
+                                     data={'barcode': '6813812841653','payed_price': '12.46'},
+                                     format='json')
+        self.assertEqual(response.status_code, HTTPStatus.OK._value_)
+        response = self.client.get(path=f'{self.base_url}{posted_item.id}/', format='json')
+        self.assertEqual(response.status_code, HTTPStatus.OK._value_)
+        assert response.data['status'] == ShoppingListItemStatus.SHOPPED._value_
+        created_datetime = response.data['created']
+        saved_shoppinglistitem: ShoppingListItem = ShoppingListItem.objects.filter(created=created_datetime).get()
+        self.assertIsNotNone(saved_shoppinglistitem)
+        created_inv_item:InventoryItem = InventoryItem.objects.filter(shoppinglistitem=saved_shoppinglistitem).get()
+        self.assertIsNotNone(created_inv_item)
+        assert created_inv_item.barcode == '6813812841653'
+        assert created_inv_item.payed_price == Decimal('12.46')
+
+    @pytest.mark.django_db
     def post_shoppinglistitem_and_getit_from_db(self) -> InventoryItem:
         response = self.client.post(self.base_url, data=self.shoppinglistitem_json, format='json')
         self.assertEqual(response.status_code, HTTPStatus.CREATED._value_)
@@ -94,6 +112,7 @@ class ShoppingListItemE2ETest(APITestCase):
         assert response.data['buyer'] == json_input['buyer']
         assert response.data['item_quantity'] == int(json_input['quantity'])
         assert response.data['expected_item_price_max'] == int(json_input['expected_item_price_max'])
+        assert response.data['status'] == ShoppingListItemStatus.CREATED._value_
         # calculated and auto fields
         self.assertIn(response.data['created'][0:9], str(now()))
         assert response.data['url'] == 'http://testserver/shoppinglistitem/1/'
