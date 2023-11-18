@@ -13,11 +13,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 APP_SETTINGS_PROD_FILENAME = 'APPLICATION_SETTINGS'
 APP_SETTINGS_DEV_FILENAME = 'APPLICATION_SETTINGS_DEV'
 
-APPLICATION_SETTINGS_CONTENT = os.getenv(APP_SETTINGS_PROD_FILENAME) or os.getenv(APP_SETTINGS_DEV_FILENAME)
+app_settings_content = os.getenv(APP_SETTINGS_PROD_FILENAME) or os.getenv(APP_SETTINGS_DEV_FILENAME)
 app_settings_secret_value = None
 
-if APPLICATION_SETTINGS_CONTENT:
-    app_settings_secret_value = str_to_dict(APPLICATION_SETTINGS_CONTENT)
+if app_settings_content:
+    app_settings_secret_value = str_to_dict(app_settings_content)
     print(f'APPLICATION_SETTINGS: {app_settings_secret_value}')
     SECRET_KEY = app_settings_secret_value['SECRET_KEY']
     DEBUG = app_settings_secret_value['DEBUG']
@@ -43,4 +43,5 @@ if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
     DATABASES["default"]["HOST"] = "127.0.0.1"
     DATABASES["default"]["PORT"] = 5432
 
-from config.local import *
+if app_settings_content is None:
+    from config.local import *
