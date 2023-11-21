@@ -7,7 +7,7 @@ from django.template.defaulttags import now
 from django.urls import reverse
 from rest_framework.test import APIClient, APITestCase
 
-from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingListItemStatus
+from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingListItemStatus, InventoryItemStatus
 
 
 class ShoppingListItemE2ETest(APITestCase):
@@ -37,9 +37,8 @@ class ShoppingListItemE2ETest(APITestCase):
     @pytest.mark.django_db
     def test_post(self):
         response = self.client.post(self.base_url, data=self.shoppinglistitem_json, format='json')
-
+        self.assertEqual(response.status_code, HTTPStatus.CREATED._value_)
         self.assert_response_fields_equals_json_input(response, self.shoppinglistitem_json)
-        self.assert_inventory_item_is_created()
 
     @pytest.mark.django_db
     def test_get(self):
@@ -52,10 +51,11 @@ class ShoppingListItemE2ETest(APITestCase):
     def test_patch(self):
         posted_item = self.post_shoppinglistitem_and_getit_from_db()
         response = self.client.patch(path=f'{self.base_url}{posted_item.id}/',
-                                     data={'item_brand': 'Continente'},
+                                     data={'barcode': '668168168168',
+                                           'payed_price': '5.64'},
                                      format='json')
         self.assertEqual(response.status_code, HTTPStatus.OK._value_)
-        self.assertEqual(response.data['item_brand'], 'Continente')
+        self.assert_inventory_item_is_stored(response.data)
 
     @pytest.mark.django_db
     def test_put(self):
@@ -117,13 +117,16 @@ class ShoppingListItemE2ETest(APITestCase):
         self.assertIn(response.data['created'][0:9], str(now()))
         assert response.data['url'] == 'http://testserver/shoppinglistitem/1/'
 
-    def assert_inventory_item_is_created(self):
-        self.assertEqual(InventoryItem.objects.get().name, self.shoppinglistitem_json['item_name'])
-        self.assertEqual(InventoryItem.objects.get().quantity, int(self.shoppinglistitem_json['item_quantity']))
-        self.assertEqual(InventoryItem.objects.get().brand, self.shoppinglistitem_json['item_brand'])
-        self.assertEqual(InventoryItem.objects.get().grocery_store, self.shoppinglistitem_json['item_grocery_store'])
+    def assert_inventory_item_is_stored(self, shoppinglistitem_json):
+        shoplistitem = ShoppingListItem.objects.filter(created=shoppinglistitem_json['created']).get()
+        created_inventory = InventoryItem.objects.filter(shoppinglistitem=shoplistitem).get()
+        self.assertEqual(created_inventory.name, self.shoppinglistitem_json['item_name'])
+        self.assertEqual(created_inventory.quantity, int(self.shoppinglistitem_json['item_quantity']))
+        self.assertEqual(created_inventory.brand, self.shoppinglistitem_json['item_brand'])
+        self.assertEqual(created_inventory.grocery_store, self.shoppinglistitem_json['item_grocery_store'])
         user = User.objects.get_by_natural_key('admin')
-        self.assertEqual(InventoryItem.objects.get().creator, user)
+        self.assertEqual(created_inventory.creator, user)
+        assert created_inventory.status == InventoryItemStatus.STORED
 
     def assert_response_fields_equals_json_input(self, response, json_input):
         self.assertEqual(response.data['item_name'], json_input['item_name'])

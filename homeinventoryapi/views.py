@@ -2,6 +2,7 @@ import logging
 
 from django.contrib.auth.models import User
 from rest_framework import permissions, viewsets, status
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -23,6 +24,7 @@ def api_root(request, format=None):
         }
     )
 
+# Only GET and DELETE(when item runs out) are allowed. InventoryItem creation is done by POST /shoppinglistitem
 class InventoryItemViewSet(viewsets.ModelViewSet):
     logger = logging.getLogger(__name__)
     queryset = InventoryItem.objects.all()
@@ -34,9 +36,12 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         response = {'message': 'POST method is not allowed.'}
         return Response(response, status=status.HTTP_403_FORBIDDEN)
 
-    def destroy(self, request, pk=None):
-        logger.debug('getting into destroy()')
-        response = {'message': 'DELETE method is not allowed.'}
+    def update(self, request):
+        response = {'message': 'PUT method is not allowed.'}
+        return Response(response, status=status.HTTP_403_FORBIDDEN)
+
+    def partial_update(self, request):
+        response = {'message': 'PATCH method is not allowed.'}
         return Response(response, status=status.HTTP_403_FORBIDDEN)
 
 class ShoppingListItemViewSet(viewsets.ModelViewSet):
@@ -53,24 +58,29 @@ class ShoppingListItemViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         logger.debug('getting into perform_update()')
-        updated_shoplistitem = serializer.save(buyer=self.request.user,
-                                               status=ShoppingListItemStatus.SHOPPED)
-        barcode = None
-        payed_price = None
-        if 'barcode' in self.request.data:
-            barcode = self.request.data['barcode']
-        if 'payed_price' in self.request.data:
-            payed_price = self.request.data['payed_price']
+        serializer.save(buyer=self.request.user,
+                        status=ShoppingListItemStatus.UPDATED)
 
-        inv = InventoryItem(creator=self.request.user, name=updated_shoplistitem.item_name,
-                            brand=updated_shoplistitem.item_brand, barcode=barcode, payed_price=payed_price,
-                            grocery_store=updated_shoplistitem.item_grocery_store,
-                            quantity=updated_shoplistitem.item_quantity, shoppinglistitem=updated_shoplistitem)
-        InventoryItem.save(inv)
+        if 'barcode' in self.request.data:
+            self.store_after_shopping(serializer)
+
+    def store_after_shopping(self, serializer):
+        req = self.request
+        barcode = req.data['barcode']
+        payed_price = None
+        if 'payed_price' in req.data:
+            payed_price = req.data['payed_price']
+        updated_shoplistitem = serializer.save(buyer=req.user,
+                                               status=ShoppingListItemStatus.SHOPPED)
+        inv = InventoryItem()
+        inv.from_shoppinglistitem(req_user=req.user, barcode=barcode, payed_price=payed_price,
+                                  updated_shoplistitem=updated_shoplistitem)
+        inv.save(inv)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     logger = logging.getLogger(__name__)
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    authentication_classes = (TokenAuthentication,)
     logger.debug('getting into UserViewSet')
 
