@@ -31,10 +31,14 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     serializer_class = InventoryItemSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    def create(self, request):
-        logger.debug('getting into create()')
-        response = {'message': 'POST method is not allowed.'}
-        return Response(response, status=status.HTTP_403_FORBIDDEN)
+    # show inventory_item pre-filled with shoppinglistitem(through GET) in the app screen to streamline the process
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            # POST request has to contain 'shoppinglistitem_id'
+            if 'shoppinglistitem_id' in self.request.data:
+                id = self.request.data['shoppinglistitem_id']
+                updated_shoplistitem = ShoppingListItem.objects.get(pk=id)
+                serializer.save(creator=self.request.user, shoppinglistitem=updated_shoplistitem)
 
     def update(self, request):
         response = {'message': 'PUT method is not allowed.'}
@@ -58,24 +62,13 @@ class ShoppingListItemViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         logger.debug('getting into perform_update()')
-        serializer.save(buyer=self.request.user,
-                        status=ShoppingListItemStatus.UPDATED)
-
-        if 'barcode' in self.request.data:
-            self.store_after_shopping(serializer)
-
-    def store_after_shopping(self, serializer):
-        req = self.request
-        barcode = req.data['barcode']
-        payed_price = None
-        if 'payed_price' in req.data:
-            payed_price = req.data['payed_price']
-        updated_shoplistitem = serializer.save(buyer=req.user,
-                                               status=ShoppingListItemStatus.SHOPPED)
-        inv = InventoryItem()
-        inv.from_shoppinglistitem(req_user=req.user, barcode=barcode, payed_price=payed_price,
-                                  updated_shoplistitem=updated_shoplistitem)
-        inv.save(inv)
+        if serializer.is_valid():
+            if 'barcode' not in self.request.data:
+                serializer.save(buyer=self.request.user,
+                                status=ShoppingListItemStatus.UPDATED)
+            else:
+                serializer.save(buyer=self.request.user,
+                                status=ShoppingListItemStatus.SHOPPED)
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     logger = logging.getLogger(__name__)

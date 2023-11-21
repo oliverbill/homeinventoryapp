@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from http import HTTPStatus
 
 import pytest
@@ -34,6 +35,8 @@ class InventoryItemE2ETest(APITestCase):
             'brand': 'Lindt',
             'grocery_store': 'ALDI',
             'payed_price': '4.12',
+            'min_alert': '3',
+            'shoppinglistitem_id': '1',
             'status': InventoryItemStatus.STORED.value,
             'creator': self.user_json_response.data['url']
         }
@@ -43,13 +46,36 @@ class InventoryItemE2ETest(APITestCase):
             'item_brand': 'Lindt',
             'item_grocery_store': 'ALDI',
             'expected_item_price_max': '4.12',
-            'status': ShoppingListItemStatus.SHOPPED.value,
-            'buyer': self.user_json_response.data['url']
+            'status': ShoppingListItemStatus.CREATED.value
         }
 
-    @pytest.mark.xfail(raises=HTTP_403_FORBIDDEN)
-    def test_post_raises_403(self):
-        self.client.post(path=self.base_path, data=self.inventoryitem_json)
+    @pytest.mark.django_db
+    def test_post(self):
+        admin = User.objects.get_by_natural_key("admin")
+        shoppinglistitem = ShoppingListItem()
+        shoppinglistitem = shoppinglistitem.from_json(json_data=self.shoppinglistitem_json, buyer=admin)
+        shoppinglistitem.save()
+        response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
+        assert response.status_code == HTTPStatus.CREATED.value
+        self.assert_savedinventoryitem_equals_to_jsoninput(response, shoppinglistitem)
+
+    def assert_savedinventoryitem_equals_to_jsoninput(self, json_response, shoppinglistitem):
+        admin = User.objects.get_by_natural_key("admin")
+        saved_inv:InventoryItem = InventoryItem.objects.filter(shoppinglistitem=shoppinglistitem).get()
+        assert saved_inv.name == json_response.data['name']
+        assert saved_inv.grocery_store == json_response.data['grocery_store']
+        assert saved_inv.brand == json_response.data['brand']
+        assert saved_inv.creator == admin
+        assert saved_inv.quantity == json_response.data['quantity']
+        assert saved_inv.status == json_response.data['status']
+        shoppinglistitem_from_id = ShoppingListItem.objects.get(pk=self.inventoryitem_json['shoppinglistitem_id'])
+        assert saved_inv.shoppinglistitem == shoppinglistitem_from_id
+        # str_created = f'{saved_inv.created.year} {saved_inv.created.month} {saved_inv.created.month}'
+        t2 = str(saved_inv.created)[0:19]
+        t1 = str(datetime.strptime(json_response.data['created'][0:19],'%Y-%m-%dT%H:%M:%S'))
+        assert t1 == t2
+        assert saved_inv.min_alert == json_response.data['min_alert']
+        assert saved_inv.stockout_at == None
 
     @pytest.mark.xfail(raises=HTTP_403_FORBIDDEN)
     def test_patch_raises_403(self):
@@ -107,5 +133,4 @@ class InventoryItemE2ETest(APITestCase):
         self.assertIn(response.data['created'][0:9], str(now()))
         assert response.data['stockout_at'] == None
         assert response.data['url'] == f'http://testserver/inventoryitem/{saved_inventoryitem.id}/'
-
 
