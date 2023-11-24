@@ -54,7 +54,7 @@ class InventoryItemE2ETest(APITestCase):
         self.inventoryitem_json['shoppinglistitem_id'] = '1' # does not exists in DB
         response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
         assert response.status_code == HTTPStatus.BAD_REQUEST.value
-        assert response.data == 'shoppinglistitem not exists: 1'
+        assert response.data == 'shoppinglistitem does not exists: 1'
 
     @pytest.mark.django_db
     def test_post_with_shoppinglistitem_not_used(self):

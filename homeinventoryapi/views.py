@@ -42,7 +42,7 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
 
     # show inventory_item pre-filled with shoppinglistitem(through GET) in the app screen to streamline the process
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer:InventoryItemSerializer = self.get_serializer(data=request.data)
         result = serializer.is_valid()
         if type(result) == str:
             self.queryset = InventoryItem.objects.all()

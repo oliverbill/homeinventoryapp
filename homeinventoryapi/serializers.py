@@ -29,7 +29,7 @@ class InventoryItemSerializer(serializers.HyperlinkedModelSerializer):
         if not shoppinglistitem_already_used:
             shoppinglistitem_exists = ShoppingListItem.objects.filter(pk=shoppinglistitem_id).exists()
             if not shoppinglistitem_exists:
-                return f"shoppinglistitem not exists: {shoppinglistitem_id}"
+                return f"shoppinglistitem does not exists: {shoppinglistitem_id}"
         else:
             return f"shoppinglistitem already related to another inventoryitem: {shoppinglistitem_id}"
         self.is_valid_from_super(True)
