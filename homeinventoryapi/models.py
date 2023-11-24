@@ -59,7 +59,7 @@ class InventoryItem(models.Model):
     grocery_store = CharField(choices=GroceryStore.choices, max_length=50)
     quantity = PositiveSmallIntegerField(null=True)
     payed_price = DecimalField(null=True, decimal_places=2, max_digits=10)
-    barcode = CharField(null=True, max_length=50)
+    barcode = CharField(max_length=50)
     status = CharField(choices=InventoryItemStatus.choices, max_length=50, default=InventoryItemStatus.STORED)
     # calculated fields
     min_alert = PositiveSmallIntegerField(default=1)

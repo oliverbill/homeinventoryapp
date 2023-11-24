@@ -50,14 +50,27 @@ class InventoryItemE2ETest(APITestCase):
         }
 
     @pytest.mark.django_db
-    def test_post(self):
-        admin = User.objects.get_by_natural_key("admin")
-        shoppinglistitem = ShoppingListItem()
-        shoppinglistitem = shoppinglistitem.from_json(json_data=self.shoppinglistitem_json, buyer=admin)
-        shoppinglistitem.save()
+    def test_post_with_shoppinglistitem_not_existent(self):
+        self.inventoryitem_json['shoppinglistitem_id'] = '1' # does not exists in DB
+        response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
+        assert response.data == 'shoppinglistitem not exists: 1'
+
+    @pytest.mark.django_db
+    def test_post_with_shoppinglistitem_not_used(self):
+        self.save_an_inventory_item()
+        shoppinglistitem = self.save_a_shoppinglistitem()
+        self.inventoryitem_json['shoppinglistitem_id'] = '2'
         response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
         assert response.status_code == HTTPStatus.CREATED.value
         self.assert_savedinventoryitem_equals_to_jsoninput(response, shoppinglistitem)
+
+    def test_post_with_shoppinglistitem_already_used(self):
+        self.save_an_inventory_item()
+        self.inventoryitem_json['shoppinglistitem_id'] = '1' # already related to other inventoryitem
+        response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
+        assert response.status_code == HTTPStatus.BAD_REQUEST.value
+        assert response.data == 'shoppinglistitem already related to another inventoryitem: 1'
 
     def assert_savedinventoryitem_equals_to_jsoninput(self, json_response, shoppinglistitem):
         admin = User.objects.get_by_natural_key("admin")
@@ -106,17 +119,24 @@ class InventoryItemE2ETest(APITestCase):
         self.assertEqual(response.status_code, HTTPStatus.NO_CONTENT._value_)
         assert len(InventoryItem.objects.filter(id=saved_inventoryitem.id)) == 0
 
+    @pytest.mark.django_db
     def save_an_inventory_item(self):
         admin = User.objects.get_by_natural_key("admin")
-        newshoppinglistitem = ShoppingListItem()
-        saved_shoplistitem = newshoppinglistitem.from_json(buyer=admin, json_data=self.shoppinglistitem_json)
-        saved_shoplistitem.save()
+        saved_shoplistitem = self.save_a_shoppinglistitem()
 
         newinv = InventoryItem()
         newinv.from_json(creator=admin, shoppinglistitem=saved_shoplistitem,
                          json_data=self.inventoryitem_json)
         newinv.save()
         return newinv
+
+    @pytest.mark.django_db
+    def save_a_shoppinglistitem(self):
+        admin = User.objects.get_by_natural_key("admin")
+        newshoppinglistitem = ShoppingListItem()
+        saved_shoplistitem = newshoppinglistitem.from_json(buyer=admin, json_data=self.shoppinglistitem_json)
+        saved_shoplistitem.save()
+        return saved_shoplistitem
 
     def assert_response_fields_equals_json_input(self, response, json_input, saved_inventoryitem):
         assert response.data['name'] == json_input['name']

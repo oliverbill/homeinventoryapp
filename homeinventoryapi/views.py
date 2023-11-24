@@ -24,6 +24,15 @@ def api_root(request, format=None):
         }
     )
 
+class ErrorResponse(Response):
+    def __init__(self, *args, **kwargs):
+        super(ErrorResponse,self).__init__(*args, **kwargs)
+        self.status_code = args[1]
+        self.data = {
+            'success': False,
+            'message': args[0].get('message')
+        }
+
 # Only GET and DELETE(when item runs out) are allowed. InventoryItem creation is done by POST /shoppinglistitem
 class InventoryItemViewSet(viewsets.ModelViewSet):
     logger = logging.getLogger(__name__)
@@ -32,13 +41,16 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     # show inventory_item pre-filled with shoppinglistitem(through GET) in the app screen to streamline the process
-    def perform_create(self, serializer):
-        if serializer.is_valid():
-            # POST request has to contain 'shoppinglistitem_id'
-            if 'shoppinglistitem_id' in self.request.data:
-                id = self.request.data['shoppinglistitem_id']
-                updated_shoplistitem = ShoppingListItem.objects.get(pk=id)
-                serializer.save(creator=self.request.user, shoppinglistitem=updated_shoplistitem)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        result = serializer.is_valid()
+        if type(result) == str:
+            self.queryset = InventoryItem.objects.all()
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        shoppinglistitem_id = self.request.data['shoppinglistitem_id']
+        serializer.save(creator=self.request.user, shoppinglistitem_id=shoppinglistitem_id)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request):
         response = {'message': 'PUT method is not allowed.'}
