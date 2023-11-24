@@ -67,7 +67,7 @@ class ShoppingListItemSerializer(serializers.HyperlinkedModelSerializer):
 
     def validate_item_name(self, value):
         value_trimmed = value.replace(" ", "")
-        if not value_trimmed.isalpha():
+        if value_trimmed.isdigit():
             raise serializers.ValidationError(f'item name must be alphabetic: {value}')
         return value
 
