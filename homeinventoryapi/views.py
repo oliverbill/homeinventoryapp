@@ -86,6 +86,6 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     logger = logging.getLogger(__name__)
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    authentication_classes = (TokenAuthentication,)
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
     logger.debug('getting into UserViewSet')
 
