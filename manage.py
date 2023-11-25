@@ -2,8 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import google.cloud.logging
 
 def main():
+    client = google.cloud.logging.Client()
+    client.setup_logging()
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapp.settings')
     try:

@@ -2,21 +2,20 @@ from http import HTTPStatus
 
 import pytest
 from django.contrib.auth.models import User
-from django.template.defaulttags import now
 from django.urls import reverse
+from django.utils.timezone import now
 from rest_framework.test import APIClient, APITestCase
 
 from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingListItemStatus, InventoryItemStatus
 
-
+USERNAME = 'alves.bill'
 class ShoppingListItemE2ETest(APITestCase):
 
     def setUp(self):
         self.client = APIClient()
-        self.user = User.objects.create_superuser(
-            username='admin',
-            password='admin',
-            email='admin@test.com'
+        self.user = User.objects.create_user(
+            username=USERNAME,
+            password='12345'
         )
         self.client.force_authenticate(user=self.user)
         self.base_url = reverse('shoppinglistitem-list')
@@ -26,21 +25,24 @@ class ShoppingListItemE2ETest(APITestCase):
             'item_brand': 'Lindt',
             'item_grocery_store': 'ALDI',
             'expected_item_price_max': '4.12',
-            'buyer': 'alves.bill@gmail.com'
         }
 
     @pytest.mark.django_db
     def test_post(self):
         response = self.client.post(self.base_url, data=self.shoppinglistitem_json, format='json')
         self.assertEqual(response.status_code, HTTPStatus.CREATED._value_)
-        self.assert_response_fields_equals_json_input(response, self.shoppinglistitem_json)
+        saved_shoppinglistitem: ShoppingListItem = ShoppingListItem.objects.get()
+        self.assertIsNotNone(saved_shoppinglistitem)
+        self.assert_response_fields_equals_json_input(response, self.shoppinglistitem_json,
+                                                      saved_shoppinglistitem.id)
 
     @pytest.mark.django_db
     def test_get(self):
         posted_shoppinglistitem = self.post_shoppinglistitem_and_getit_from_db()
         # get posted test data
         response = self.client.get(path=f'{self.base_url}{posted_shoppinglistitem.id}/', format='json')
-        self.assert_response_fields_equals_json_input(response, self.shoppinglistitem_json)
+        self.assert_response_fields_equals_json_input(response, self.shoppinglistitem_json,
+                                                      posted_shoppinglistitem.id)
 
     @pytest.mark.django_db
     def test_patch(self):
@@ -62,8 +64,7 @@ class ShoppingListItemE2ETest(APITestCase):
                                        'item_quantity': self.shoppinglistitem_json['item_quantity'],
                                        'item_brand': 'Continente',
                                        'item_grocery_store': self.shoppinglistitem_json['item_grocery_store'],
-                                       'expected_item_price_max': self.shoppinglistitem_json['expected_item_price_max'],
-                                       'buyer': self.shoppinglistitem_json['buyer']
+                                       'expected_item_price_max': self.shoppinglistitem_json['expected_item_price_max']
                                    },
                                    format='json')
 
@@ -81,17 +82,16 @@ class ShoppingListItemE2ETest(APITestCase):
 
         return saved_shoppinglistitem
 
-    def assert_response_fields_equals_json_input(self, response, json_input):
-        assert response.data['item_name'] == json_input['name']
-        assert response.data['item_grocery_store'] == json_input['grocery_store']
-        assert response.data['item_brand'] == json_input['brand']
-        assert response.data['buyer'] == json_input['buyer']
-        assert response.data['item_quantity'] == int(json_input['quantity'])
-        assert response.data['expected_item_price_max'] == int(json_input['expected_item_price_max'])
+    def assert_response_fields_equals_json_input(self, response, json_input, shoppinglistitem_id):
+        assert response.data['item_name'] == json_input['item_name']
+        assert response.data['item_grocery_store'] == json_input['item_grocery_store']
+        assert response.data['item_brand'] == json_input['item_brand']
+        assert response.data['item_quantity'] == int(json_input['item_quantity'])
+        assert response.data['expected_item_price_max'] == json_input['expected_item_price_max']
         assert response.data['status'] == ShoppingListItemStatus.CREATED._value_
         # calculated and auto fields
         self.assertIn(response.data['created'][0:9], str(now()))
-        assert response.data['url'] == 'http://testserver/shoppinglistitem/1/'
+        assert response.data['url'] == f'http://testserver/shoppinglistitem/{shoppinglistitem_id}/'
 
     def assert_inventory_item_is_stored(self, shoppinglistitem_json):
         shoplistitem = ShoppingListItem.objects.filter(created=shoppinglistitem_json['created']).get()
@@ -100,13 +100,7 @@ class ShoppingListItemE2ETest(APITestCase):
         self.assertEqual(created_inventory.quantity, int(self.shoppinglistitem_json['item_quantity']))
         self.assertEqual(created_inventory.brand, self.shoppinglistitem_json['item_brand'])
         self.assertEqual(created_inventory.grocery_store, self.shoppinglistitem_json['item_grocery_store'])
-        user = User.objects.get_by_natural_key('bill')
+        user = User.objects.get_by_natural_key(USERNAME)
         self.assertEqual(created_inventory.creator, user)
         assert created_inventory.status == InventoryItemStatus.STORED
 
-    def assert_response_fields_equals_json_input(self, response, json_input):
-        self.assertEqual(response.data['item_name'], json_input['item_name'])
-        self.assertEqual(response.data['item_brand'], json_input['item_brand'])
-        self.assertEqual(response.data['item_quantity'], int(json_input['item_quantity']))
-        self.assertEqual(response.data['item_grocery_store'], json_input['item_grocery_store'])
-        self.assertEqual(response.data['expected_item_price_max'], json_input['expected_item_price_max'])

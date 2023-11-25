@@ -1,4 +1,3 @@
-import os
 from datetime import datetime
 from http import HTTPStatus
 
@@ -9,25 +8,20 @@ from django.utils.timezone import now
 from rest_framework.status import HTTP_403_FORBIDDEN
 from rest_framework.test import APIClient, APITestCase
 
-from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingListItemStatus, InventoryItemStatus
+from homeinventoryapi.models import InventoryItem, ShoppingListItem
 
-
+USERNAME = 'alves.bill'
 class InventoryItemE2ETest(APITestCase):
 
     def setUp(self):
         # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
         self.client = APIClient()
-        self.user = User.objects.create_superuser(
-            username='admin',
-            password='admin',
-            email='admin@test.com'
+        self.user = User.objects.create_user(
+            username=USERNAME,
+            password='12345'
         )
         self.client.force_authenticate(user=self.user)
         self.base_path = reverse('inventoryitem-list')
-        self.shoppinglistitem_baseurl = reverse('shoppinglistitem-list')
-        self.test_user_url = f'{reverse("user-list")}{self.user.id}/'
-        self.user_json_response = self.client.get(path=self.test_user_url)
-        assert self.user_json_response.status_code == HTTPStatus.OK
         self.inventoryitem_json = {
             'name': 'chocolate',
             'quantity': '3',
@@ -36,17 +30,14 @@ class InventoryItemE2ETest(APITestCase):
             'grocery_store': 'ALDI',
             'payed_price': '4.12',
             'min_alert': '3',
-            'shoppinglistitem_id': '1',
-            'status': InventoryItemStatus.STORED.value,
-            'creator': self.user_json_response.data['url']
+            'shoppinglistitem_id': '1'
         }
         self.shoppinglistitem_json = {
             'item_name': 'chocolate',
             'item_quantity': '3',
             'item_brand': 'Lindt',
             'item_grocery_store': 'ALDI',
-            'expected_item_price_max': '4.12',
-            'status': ShoppingListItemStatus.CREATED.value
+            'expected_item_price_max': '4.12'
         }
 
     def test_post_with_shoppinglistitem_not_existent(self):
@@ -72,12 +63,11 @@ class InventoryItemE2ETest(APITestCase):
         assert response.data == 'shoppinglistitem already related to another inventoryitem: 1'
 
     def assert_savedinventoryitem_equals_to_jsoninput(self, json_response, shoppinglistitem):
-        admin = User.objects.get_by_natural_key("admin")
         saved_inv:InventoryItem = InventoryItem.objects.filter(shoppinglistitem=shoppinglistitem).get()
         assert saved_inv.name == json_response.data['name']
         assert saved_inv.grocery_store == json_response.data['grocery_store']
         assert saved_inv.brand == json_response.data['brand']
-        assert saved_inv.creator == admin
+        assert saved_inv.creator == self.user
         assert saved_inv.quantity == json_response.data['quantity']
         assert saved_inv.status == json_response.data['status']
         shoppinglistitem_from_id = ShoppingListItem.objects.get(pk=self.inventoryitem_json['shoppinglistitem_id'])
@@ -100,8 +90,7 @@ class InventoryItemE2ETest(APITestCase):
                             'quantity': '1',
                             'brand': 'Dell',
                             'grocery_store': 'CONTINENTE',
-                            'payed_price': '300.54',
-                            'creator': self.user_json_response.data['url']
+                            'payed_price': '300.54'
                         })
 
     @pytest.mark.django_db
@@ -120,20 +109,20 @@ class InventoryItemE2ETest(APITestCase):
 
     @pytest.mark.django_db
     def save_an_inventory_item(self):
-        admin = User.objects.get_by_natural_key("admin")
+        user = User.objects.get_by_natural_key(USERNAME)
         saved_shoplistitem = self.save_a_shoppinglistitem()
 
         newinv = InventoryItem()
-        newinv.from_json(creator=admin, shoppinglistitem=saved_shoplistitem,
+        newinv.from_json(creator=user, shoppinglistitem=saved_shoplistitem,
                          json_data=self.inventoryitem_json)
         newinv.save()
         return newinv
 
     @pytest.mark.django_db
     def save_a_shoppinglistitem(self):
-        admin = User.objects.get_by_natural_key("admin")
+        user = User.objects.get_by_natural_key(USERNAME)
         newshoppinglistitem = ShoppingListItem()
-        saved_shoplistitem = newshoppinglistitem.from_json(buyer=admin, json_data=self.shoppinglistitem_json)
+        saved_shoplistitem = newshoppinglistitem.from_json(buyer=user, json_data=self.shoppinglistitem_json)
         saved_shoplistitem.save()
         return saved_shoplistitem
 
@@ -141,7 +130,7 @@ class InventoryItemE2ETest(APITestCase):
         assert response.data['name'] == json_input['name']
         assert response.data['grocery_store'] == json_input['grocery_store']
         assert response.data['brand'] == json_input['brand']
-        assert response.data['creator'] == json_input['creator']
+        assert response.data['creator'] == f'http://testserver/users/{self.user.id}/'
         assert response.data['quantity'] == int(json_input['quantity'])
         # calculated and auto fields
         assert response.data['min_alert'] == 1

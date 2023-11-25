@@ -41,8 +41,8 @@ class ShoppingListItem(models.Model):
     class Meta:
         ordering = ['created']
 
-    def from_json(self, buyer, json_data):
-        self.status = json_data['status']
+    def from_json(self, buyer, json_data, status=ShoppingListItemStatus.CREATED):
+        self.status = status
         self.item_quantity = json_data['item_quantity']
         self.item_grocery_store = json_data['item_grocery_store']
         self.expected_item_price_max = json_data['expected_item_price_max']
@@ -74,7 +74,7 @@ class InventoryItem(models.Model):
     class Meta:
         ordering = ['updated']
 
-    def from_json(self, creator, shoppinglistitem, json_data):
+    def from_json(self, creator, shoppinglistitem, json_data, status=InventoryItemStatus.STORED):
         self.creator = creator
         self.name = json_data['name']
         self.brand = json_data['brand']
@@ -83,7 +83,7 @@ class InventoryItem(models.Model):
         self.grocery_store = json_data['grocery_store']
         self.quantity = json_data['quantity']
         self.shoppinglistitem = shoppinglistitem
-        self.status = json_data['status']
+        self.status = status
         return self
 
     def from_shoppinglistitem(self, req_user, barcode, payed_price, updated_shoplistitem):

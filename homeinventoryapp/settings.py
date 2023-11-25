@@ -1,3 +1,5 @@
+from config.base import *
+
 import os
 from urllib.parse import urlparse
 
