@@ -15,7 +15,7 @@ from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingLis
 class InventoryItemE2ETest(APITestCase):
 
     def setUp(self):
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
+        # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
         self.client = APIClient()
         self.user = User.objects.create_superuser(
             username='admin',
@@ -49,7 +49,6 @@ class InventoryItemE2ETest(APITestCase):
             'status': ShoppingListItemStatus.CREATED.value
         }
 
-    @pytest.mark.django_db
     def test_post_with_shoppinglistitem_not_existent(self):
         self.inventoryitem_json['shoppinglistitem_id'] = '1' # does not exists in DB
         response = self.client.post(path=self.base_path, data=self.inventoryitem_json)

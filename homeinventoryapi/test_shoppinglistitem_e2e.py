@@ -1,7 +1,6 @@
 from http import HTTPStatus
 
 import pytest
-from _decimal import Decimal
 from django.contrib.auth.models import User
 from django.template.defaulttags import now
 from django.urls import reverse
@@ -13,7 +12,6 @@ from homeinventoryapi.models import InventoryItem, ShoppingListItem, ShoppingLis
 class ShoppingListItemE2ETest(APITestCase):
 
     def setUp(self):
-        # os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'homeinventoryapi.settings')
         self.client = APIClient()
         self.user = User.objects.create_superuser(
             username='admin',
@@ -22,16 +20,13 @@ class ShoppingListItemE2ETest(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
         self.base_url = reverse('shoppinglistitem-list')
-        self.test_user_url = f'{reverse("user-list")}{self.user.id}/'
-        self.user_json_response = self.client.get(path=self.test_user_url)
-        assert self.user_json_response.status_code == HTTPStatus.OK
         self.shoppinglistitem_json = {
             'item_name': 'chocolate',
             'item_quantity': '3',
             'item_brand': 'Lindt',
             'item_grocery_store': 'ALDI',
             'expected_item_price_max': '4.12',
-            'buyer': self.user_json_response.data['url']
+            'buyer': 'alves.bill@gmail.com'
         }
 
     @pytest.mark.django_db
@@ -105,7 +100,7 @@ class ShoppingListItemE2ETest(APITestCase):
         self.assertEqual(created_inventory.quantity, int(self.shoppinglistitem_json['item_quantity']))
         self.assertEqual(created_inventory.brand, self.shoppinglistitem_json['item_brand'])
         self.assertEqual(created_inventory.grocery_store, self.shoppinglistitem_json['item_grocery_store'])
-        user = User.objects.get_by_natural_key('admin')
+        user = User.objects.get_by_natural_key('bill')
         self.assertEqual(created_inventory.creator, user)
         assert created_inventory.status == InventoryItemStatus.STORED
 

@@ -1,7 +1,7 @@
 /.idea
 /venv/
 /.pytest_cache/
-/startup-local-server.cmd
+/utils/startup-local-server.cmd
 /db.sqlite3
 /test_conn.py
 /.env-prod

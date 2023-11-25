@@ -6,7 +6,7 @@ from rest_framework.exceptions import ValidationError
 from homeinventoryapi.serializers import ShoppingListItemSerializer
 
 
-class InventoryItemE2ETest(TestCase):
+class ShoppingListItemSerializerTest(TestCase):
     def test_validate_item_name_fails_with_number(self):
         serializer = ShoppingListItemSerializer()
         with pytest.raises(ValidationError):
