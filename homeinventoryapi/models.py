@@ -12,7 +12,7 @@ class GroceryStore(models.TextChoices):
     ALDI = "ALDI"
     CONTINENTE = "CONTINENTE"
     LIDL = "LIDL"
-    PINGO_DOCE = "PINGO_DOCE"
+    PINGO_DOCE = "PINGO DOCE"
     INTERMARCHE = "INTERMARCHE"
     OUTRO = "OUTRO"
 
