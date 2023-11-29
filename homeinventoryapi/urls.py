@@ -7,6 +7,7 @@ from rest_framework.authtoken.views import obtain_auth_token
 router = DefaultRouter()
 router.register(r'inventoryitem', views.InventoryItemViewSet, basename="inventoryitem")
 router.register(r'shoppinglistitem', views.ShoppingListItemViewSet, basename="shoppinglistitem")
+router.register(r'shoppinglist', views.ShoppingListViewSet, basename="shoppinglist")
 router.register(r'users', views.UserViewSet, basename="user")
 
 # The API URLs are now determined automatically by the router.

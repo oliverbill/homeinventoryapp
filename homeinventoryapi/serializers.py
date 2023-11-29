@@ -1,9 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import Serializer, ModelSerializer
 
-from homeinventoryapi.models import ShoppingListItem, InventoryItem, GroceryStore
+from homeinventoryapi.models import ShoppingListItem, InventoryItem, GroceryStore, ShoppingList
 
 
 class InventoryItemSerializer(serializers.HyperlinkedModelSerializer):
@@ -57,13 +56,23 @@ class InventoryItemSerializer(serializers.HyperlinkedModelSerializer):
 
         return not bool(self._errors)
 
+class ShoppingListSerializer(serializers.HyperlinkedModelSerializer):
+    url = serializers.HyperlinkedIdentityField(view_name="shoppinglist-detail")
+    shoppinglistitems = serializers.HyperlinkedRelatedField(
+        many=True, view_name="shoppinglistitem-detail", read_only=True
+    )
+
+    class Meta:
+        model = ShoppingList
+        fields = '__all__'
+        read_only_fields = ['buyer', 'status']
+
 class ShoppingListItemSerializer(serializers.HyperlinkedModelSerializer):
     url = serializers.HyperlinkedIdentityField(view_name="shoppinglistitem-detail")
 
     class Meta:
         model = ShoppingListItem
         fields = '__all__'
-        read_only_fields = ['buyer', 'status']
 
     def validate_item_name(self, value):
         value_trimmed = value.replace(" ", "")
@@ -81,8 +90,8 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
     inventoryitems = serializers.HyperlinkedRelatedField(
         many=True, view_name="inventoryitem-detail", read_only=True
     )
-    shoppinglistitems = serializers.HyperlinkedRelatedField(
-        many=True, view_name="shoppinglistitem-detail", read_only=True
+    shoppinglists = serializers.HyperlinkedRelatedField(
+        many=True, view_name="shoppinglist-detail", read_only=True
     )
 
     class Meta:
