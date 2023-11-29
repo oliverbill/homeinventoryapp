@@ -18,6 +18,7 @@ def api_root(request, format=None):
         {
             "users": reverse("user-list", request=request, format=format),
             "shoppinglistitems": reverse("shoppinglistitem-list", request=request, format=format),
+            "shoppinglist": reverse("shoppinglist-list", request=request, format=format),
             "inventoryitems": reverse("inventoryitem-list", request=request, format=format),
         }
     )

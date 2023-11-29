@@ -36,7 +36,7 @@ class ShoppingListItem(models.Model):
     item_quantity = PositiveSmallIntegerField(default=1)
     item_brand = CharField(null=True, max_length=50)
     item_grocery_store = CharField(choices=GroceryStore.choices, max_length=50)
-    expected_item_price_max = DecimalField(decimal_places=2, max_digits=10)
+    expected_item_price_max = DecimalField(null=True, decimal_places=2, max_digits=10)
     shoppinglist = models.ForeignKey(to=ShoppingList, related_name="shoppinglistitems", on_delete=models.CASCADE)
 
     class Meta:

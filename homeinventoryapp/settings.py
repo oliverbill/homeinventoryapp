@@ -29,11 +29,6 @@ if app_settings_from_secrets:
     env.ENVIRON.setdefault(key='DATABASE_URL',value=DATABASE_URL)
     DATABASES = {'default': env.db()}
     GS_BUCKET_NAME = app_settings_secret_value['GS_BUCKET_NAME']
-    STATICFILES_DIRS = []
-    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    GS_DEFAULT_ACL = "publicRead"
-    STATIC_ROOT = "static-djangoadmin/"
 
     if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
         DATABASES["default"]["HOST"] = "127.0.0.1"

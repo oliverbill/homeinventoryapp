@@ -1,0 +1,14 @@
+drop table auth_user_groups
+drop table auth_group_permissions
+drop table auth_user_user_permissions
+drop table auth_permission
+drop table authtoken_token
+drop table auth_group
+drop table django_admin_log
+drop table django_content_type
+drop table django_session
+drop table homeinventoryapi_inventoryitem
+drop table homeinventoryapi_shoppinglistitem
+drop table auth_user
+drop table django_migrations
+
