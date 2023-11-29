@@ -6,16 +6,17 @@ function Initialize() {
     for (var i in triggers)
       ScriptApp.deleteTrigger(triggers[i]);
 
-    ScriptApp.newTrigger("SubmitGoogleFormData")
+    ScriptApp.newTrigger("SubmitGoogleSheetsData")
       .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
-      .onFormSubmit().create();
+      .onEdit()
+      .create();
 
   } catch (error) {
     throw new Error("Please add this code in the Google Spreadsheet");
   }
 }
 
-function SubmitGoogleFormData(e) {
+function SubmitGoogleSheetsData(e) {
 
   if (!e) {
     throw new Error("Please go the Run menu and choose Initialize");
@@ -23,13 +24,14 @@ function SubmitGoogleFormData(e) {
 
   try {
 
-    payload = buildPayloadFromSpreadsheet();
+    payload_tmp = buildPayloadFromSpreadsheet();
+    payload = {"shoppinglist_items" : payload_tmp}
 
-    var POST_SHOPITEM_URL = "https://django-cloudrun-equcscffbq-ew.a.run.app//shoppinglistitem/";
+    var POST_SHOPITEM_URL = "https://django-cloudrun-equcscffbq-ew.a.run.app//shoppinglist/";
 
     headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token  21cd58f7cbfc2af0d59f234714cbe59967d489a1'
+      'Authorization': 'Token  15f2d1616011119dfb6db4dcf47656fd0af6b4d2'
     }
 
     var options = {
@@ -95,7 +97,8 @@ function buildPayloadFromSpreadsheet(){
       payload = {
           "item_name": fields[0],
           "item_brand": fields[1],
-          "item_quantity": fields[2]
+          "item_quantity": fields[2],
+          "shoppinglist_id": "1"
       }
 
       if (expectedPrice.length != ""){
