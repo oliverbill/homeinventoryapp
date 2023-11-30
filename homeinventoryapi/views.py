@@ -32,16 +32,19 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     # show inventory_item pre-filled with shoppinglistitem(through GET) in the app screen to streamline the process
     def create(self, request, *args, **kwargs):
         logging.debug('getting into InventoryItemViewSet.create')
-        serializer:InventoryItemSerializer = self.get_serializer(data=request.data)
-        result = serializer.is_valid()
-        if type(result) == str:
-            logging.debug('serializer validation failed')
-            self.queryset = InventoryItem.objects.all()
+        if 'shoppinglistitem_id' not in request.data:
+            return Response('shoppinglistitem_id not found in payload', status=status.HTTP_400_BAD_REQUEST)
+        shoppinglistitem_id = request.data['shoppinglistitem_id']
+        result = is_shoppinglistitem_in_use(shoppinglistitem_id)
+        if not result:
+            inventory_fields = populate_inventory_fields(shoppinglistitem_id, request)
+            serializer: InventoryItemSerializer = self.get_serializer(data=inventory_fields)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(creator=self.request.user, shoppinglistitem_id=shoppinglistitem_id)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
-        shoppinglistitem_id = self.request.data['shoppinglistitem_id']
-        serializer.save(creator=self.request.user, shoppinglistitem_id=shoppinglistitem_id)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         response = {'message': 'PUT method is not allowed.'}
@@ -50,9 +53,6 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         response = {'message': 'PATCH method is not allowed.'}
         return Response(response, status=status.HTTP_403_FORBIDDEN)
-
-    def delete(self):
-        pass
 
 class ShoppingListViewSet(viewsets.ModelViewSet):
     queryset = ShoppingList.objects.all()
@@ -145,6 +145,44 @@ def get_status(request):
     else:
         logging.debug('update with barcode')
         return ShoppingListStatus.SHOPPED
+
+def is_shoppinglistitem_in_use(shoppinglistitem_id):
+    shoppinglistitem_already_used = InventoryItem.objects.filter(shoppinglistitem_id=shoppinglistitem_id).exists()
+    if not shoppinglistitem_already_used:
+        shoppinglistitem_exists = ShoppingListItem.objects.filter(pk=shoppinglistitem_id).exists()
+        if not shoppinglistitem_exists:
+            msg = f"shoppinglistitem does not exists: {shoppinglistitem_id}"
+        else:
+            return False
+    else:
+        msg = f"shoppinglistitem already related to another inventoryitem: {shoppinglistitem_id}"
+    return msg
+
+def populate_inventory_fields(shoppinglistitem_id, request):
+    shoppinglistitem = ShoppingListItem.objects.get(pk=shoppinglistitem_id)
+    name = get_field_in_request_or_none(request, ['name']) or shoppinglistitem.item_name
+    brand = get_field_in_request_or_none(request, ['brand']) or shoppinglistitem.item_brand
+    grocery_store = get_field_in_request_or_none(request, ['grocery_store']) or shoppinglistitem.item_grocery_store
+    quantity = get_field_in_request_or_none(request, ['quantity']) or shoppinglistitem.item_quantity
+    payed_price = get_field_in_request_or_none(request, ['payed_price']) or shoppinglistitem.expected_item_price_max
+    barcode = get_field_in_request_or_none(request, ['barcode'])
+    if not barcode:
+        return Response('barcode not found in payload', status=status.HTTP_400_BAD_REQUEST)
+    inventory_fields = {
+        'name': name,
+        'brand': brand,
+        'grocery_store': grocery_store,
+        'quantity': quantity,
+        'payed_price': payed_price,
+        'barcode': barcode
+    }
+    return inventory_fields
+
+def get_field_in_request_or_none(request, fields) -> str:
+    temp = [request.data[f] for f in fields if f in request.data]
+    if len(temp) > 0:
+        return temp[0]
+    return None
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()

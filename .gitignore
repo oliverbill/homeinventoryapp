@@ -11,3 +11,4 @@
 /config/local.py
 /htmlcov/
 .coverage
+/static-djangoadmin/

@@ -58,10 +58,17 @@ class InventoryItemE2ETest(APITestCase):
     def test_post_with_shoppinglistitem_already_used(self):
         self.save_an_inventory_item() # saved with shoplistitem_id=1
         self.save_a_shoppinglistitem()
-        self.inventoryitem_json['shoppinglistitem_id'] = '1' # already related to other inventoryitem
         response = self.client.post(path=self.base_path, data=self.inventoryitem_json)
         assert response.status_code == HTTPStatus.BAD_REQUEST.value
         assert response.data == 'shoppinglistitem already related to another inventoryitem: 1'
+
+    def test_post_with_shorter_payload(self):
+        shoppinglistitem = self.save_a_shoppinglistitem()
+        barcode: str = self.inventoryitem_json['barcode']
+        shorter_payload = {'barcode': barcode, 'shoppinglistitem_id': shoppinglistitem.id}
+        response = self.client.post(path=self.base_path, data=shorter_payload)
+        assert response.status_code == HTTPStatus.CREATED.value
+        self.assert_savedinventoryitem_equals_to_jsoninput(response, shoppinglistitem)
 
     @pytest.mark.xfail(raises=HTTP_403_FORBIDDEN)
     def test_patch_raises_403(self):

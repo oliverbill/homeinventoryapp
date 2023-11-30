@@ -22,18 +22,6 @@ class InventoryItemSerializer(serializers.HyperlinkedModelSerializer):
             raise serializers.ValidationError(f'shoppinglistitem_id must be numeric: {value}')
         return value
 
-    def is_valid(self, *, raise_exception=False):
-        shoppinglistitem_id = self.initial_data['shoppinglistitem_id']
-        shoppinglistitem_already_used = InventoryItem.objects.filter(shoppinglistitem_id=shoppinglistitem_id).exists()
-        if not shoppinglistitem_already_used:
-            shoppinglistitem_exists = ShoppingListItem.objects.filter(pk=shoppinglistitem_id).exists()
-            if not shoppinglistitem_exists:
-                return f"shoppinglistitem does not exists: {shoppinglistitem_id}"
-        else:
-            return f"shoppinglistitem already related to another inventoryitem: {shoppinglistitem_id}"
-        self.is_valid_from_super(True)
-        return self.initial_data
-
     # metodo copiado de BaseSerializer para q os atributos "_validated_data" e "_errors"
     # sejam criados. Nao deu certo chamar por delegacao: self.base_serializer.is_valid.
     def is_valid_from_super(self, raise_exception=False):

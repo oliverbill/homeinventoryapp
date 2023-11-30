@@ -50,9 +50,10 @@ class InventoryItem(models.Model):
     grocery_store = CharField(choices=GroceryStore.choices, max_length=50)
     quantity = PositiveSmallIntegerField(null=True)
     payed_price = DecimalField(null=True, decimal_places=2, max_digits=10)
-    barcode = CharField(max_length=50)
+    barcode = CharField(max_length=50, unique=True)
     status = CharField(choices=InventoryItemStatus.choices, max_length=50, default=InventoryItemStatus.STORED)
-    container = CharField(max_length=100, blank=True) # armario superior da cozinha, armario abaixo da pia
+    # armario superior da cozinha, armario abaixo da pia
+    container = CharField(max_length=100, blank=True, default='armario abaixo da pia')
     # calculated fields
     min_alert = PositiveSmallIntegerField(default=1)
     stockout_at = DateTimeField(null=True, blank=True)
