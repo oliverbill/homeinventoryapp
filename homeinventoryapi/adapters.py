@@ -1,6 +1,6 @@
 from google.cloud import secretmanager
 
-from utils.utils import str_to_dict
+from utils import str_to_dict
 
 
 class GCloudAdapter:

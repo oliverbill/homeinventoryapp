@@ -1,4 +1,3 @@
-
 def str_to_dict(str_data):
     result = str_data.split()
     temp = []
@@ -6,3 +5,5 @@ def str_to_dict(str_data):
         temp.append(p.split('='))
     result = dict(temp)
     return result
+
+

@@ -1,4 +1,4 @@
-# common django config, environment unsensitive
+# common django config, environment independent
 
 from pathlib import Path
 
@@ -19,7 +19,6 @@ REST_FRAMEWORK = {
 
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
-        'rest_framework.permissions.IsAdminUser',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.BasicAuthentication',

@@ -1,14 +1,19 @@
 import logging
 
 from django.contrib.auth.models import User
+from django.utils.timezone import now
 from rest_framework import permissions, viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
+from rest_framework.utils import json
 
-from homeinventoryapi.models import ShoppingListItem, InventoryItem, ShoppingListStatus, ShoppingList
+from homeinventoryapi.models import ShoppingListItem, InventoryItem, ShoppingListStatus, ShoppingList, \
+    InventoryItemStatus
 from homeinventoryapi.serializers import UserSerializer, ShoppingListItemSerializer, \
     InventoryItemSerializer, ShoppingListSerializer
+from homeinventoryapi.viewset_utils import is_shoppinglistitem_in_use, \
+    populate_inventory_fields
 
 
 @api_view(["GET"])
@@ -35,8 +40,12 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         if 'shoppinglistitem_id' not in request.data:
             return Response('shoppinglistitem_id not found in payload', status=status.HTTP_400_BAD_REQUEST)
         shoppinglistitem_id = request.data['shoppinglistitem_id']
-        result = is_shoppinglistitem_in_use(shoppinglistitem_id)
-        if not result:
+        in_use = is_shoppinglistitem_in_use(shoppinglistitem_id)
+        if not in_use:
+            shoplistitem:ShoppingListItem = ShoppingListItem.objects.get(pk=shoppinglistitem_id)
+            shoplistitem.shoppinglist.status = ShoppingListStatus.SHOPPED
+            shoplistitem.shoppinglist.save()
+            shoplistitem.refresh_from_db()
             inventory_fields = populate_inventory_fields(shoppinglistitem_id, request)
             serializer: InventoryItemSerializer = self.get_serializer(data=inventory_fields)
             serializer.is_valid(raise_exception=True)
@@ -44,7 +53,7 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         else:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            return Response(in_use, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
         response = {'message': 'PUT method is not allowed.'}
@@ -53,6 +62,14 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
     def partial_update(self, request, *args, **kwargs):
         response = {'message': 'PATCH method is not allowed.'}
         return Response(response, status=status.HTTP_403_FORBIDDEN)
+
+    def destroy(self, request, *args, **kwargs):
+        instance:InventoryItem = self.get_object()
+        instance.status = InventoryItemStatus.RUNOUT
+        instance.quantity = 0
+        instance.runout_at = now()
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ShoppingListViewSet(viewsets.ModelViewSet):
     queryset = ShoppingList.objects.all()
@@ -108,81 +125,15 @@ class ShoppingListItemViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         logging.debug('getting into ShoppingListItemViewSet.perform_update()')
         serializer.is_valid(raise_exception=True)
-        shoppinglist = get_shoppinglist(self.request)
-        if shoppinglist:
-            shoppinglist_status = get_status(request=self.request)
-            shoppinglist.status = shoppinglist_status
-            shoppinglist.save()
-            serializer.save(shoppinglist_id=shoppinglist.id)
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+        shoppinglistitem_id = self.kwargs['pk']
+        item:ShoppingListItem = ShoppingListItem.objects.get(pk=shoppinglistitem_id)
+        shoppinglist = item.shoppinglist
+        shoppinglist.status = ShoppingListStatus.UPDATED
+        shoppinglist.save()
+        serializer.save(shoppinglist_id=shoppinglist.id)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
-def save_shoppinglistitem(request, saved_shoppinglist, serializer, viewset:viewsets.ModelViewSet):
-    request.data['shoppinglist_id'] = saved_shoppinglist.id
-    result = serializer.is_valid()
-    if type(result) == str:
-        logging.debug('serializer validation failed')
-        viewset.queryset = ShoppingListItem.objects.all()
-        return Response(result, status=status.HTTP_400_BAD_REQUEST)
-    serializer.save(shoppinglist=saved_shoppinglist)
-    headers = viewset.get_success_headers(serializer.data)
-    return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-def get_shoppinglist(request) -> ShoppingList:
-    if 'shoppinglist_id' not in request.data: return False
-    shoppinglist_id = request.data['shoppinglist_id']
-    query = ShoppingList.objects.filter(pk=shoppinglist_id)
-    if query.exists():
-        return query.get()
-    else:
-        return Response(f'shoppinglist does not exist: {shoppinglist_id}', status=status.HTTP_400_BAD_REQUEST)
-
-def get_status(request):
-    logging.debug('update without barcode')
-    if 'barcode' not in request.data:
-        logging.debug('update without barcode')
-        return ShoppingListStatus.UPDATED
-    else:
-        logging.debug('update with barcode')
-        return ShoppingListStatus.SHOPPED
-
-def is_shoppinglistitem_in_use(shoppinglistitem_id):
-    shoppinglistitem_already_used = InventoryItem.objects.filter(shoppinglistitem_id=shoppinglistitem_id).exists()
-    if not shoppinglistitem_already_used:
-        shoppinglistitem_exists = ShoppingListItem.objects.filter(pk=shoppinglistitem_id).exists()
-        if not shoppinglistitem_exists:
-            msg = f"shoppinglistitem does not exists: {shoppinglistitem_id}"
-        else:
-            return False
-    else:
-        msg = f"shoppinglistitem already related to another inventoryitem: {shoppinglistitem_id}"
-    return msg
-
-def populate_inventory_fields(shoppinglistitem_id, request):
-    shoppinglistitem = ShoppingListItem.objects.get(pk=shoppinglistitem_id)
-    name = get_field_in_request_or_none(request, ['name']) or shoppinglistitem.item_name
-    brand = get_field_in_request_or_none(request, ['brand']) or shoppinglistitem.item_brand
-    grocery_store = get_field_in_request_or_none(request, ['grocery_store']) or shoppinglistitem.item_grocery_store
-    quantity = get_field_in_request_or_none(request, ['quantity']) or shoppinglistitem.item_quantity
-    payed_price = get_field_in_request_or_none(request, ['payed_price']) or shoppinglistitem.expected_item_price_max
-    barcode = get_field_in_request_or_none(request, ['barcode'])
-    if not barcode:
-        return Response('barcode not found in payload', status=status.HTTP_400_BAD_REQUEST)
-    inventory_fields = {
-        'name': name,
-        'brand': brand,
-        'grocery_store': grocery_store,
-        'quantity': quantity,
-        'payed_price': payed_price,
-        'barcode': barcode
-    }
-    return inventory_fields
-
-def get_field_in_request_or_none(request, fields) -> str:
-    temp = [request.data[f] for f in fields if f in request.data]
-    if len(temp) > 0:
-        return temp[0]
-    return None
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()

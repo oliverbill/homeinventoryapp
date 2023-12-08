@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db import models
 from django.db.models import DateTimeField, CharField, \
     DecimalField, PositiveSmallIntegerField
@@ -45,6 +47,7 @@ class ShoppingListItem(models.Model):
 class InventoryItem(models.Model):
     created = DateTimeField(auto_now_add=True)
     updated = DateTimeField(auto_now=True)
+    runout_at = DateTimeField(null=True)
     name = CharField(max_length=50)
     brand = CharField(max_length=100)
     grocery_store = CharField(choices=GroceryStore.choices, max_length=50)
@@ -67,14 +70,3 @@ class InventoryItem(models.Model):
     class Meta:
         ordering = ['updated']
 
-    def from_shoppinglistitem(self, req_user, barcode, payed_price, updated_shoplistitem):
-        self.creator = req_user
-        self.name = updated_shoplistitem.item_name
-        self.brand = updated_shoplistitem.item_brand
-        self.barcode = barcode
-        self.payed_price = payed_price
-        self.grocery_store = updated_shoplistitem.item_grocery_store
-        self.quantity = updated_shoplistitem.item_quantity
-        self.shoppinglistitem = updated_shoplistitem
-        self.status = InventoryItemStatus.STORED
-        return self

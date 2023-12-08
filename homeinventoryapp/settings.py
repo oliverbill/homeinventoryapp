@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 import environ
 
-from utils.utils import str_to_dict
+from utils import str_to_dict
 
 APP_SETTINGS_PROD_FILENAME = 'APPLICATION_SETTINGS'
 APP_SETTINGS_DEV_FILENAME = 'APPLICATION_SETTINGS_DEV'
